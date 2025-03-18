@@ -5,7 +5,7 @@
 // @description  自動電子投票並保存結果成 PDF
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=stockvote.com.tw
+// @icon         https://raw.githubusercontent.com/zxc88645/TdccAuto/refs/heads/main/img/TdccAuto_icon.png
 // @grant        none
 // @require      https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js
@@ -13,7 +13,7 @@
 // @license      MIT
 // @downloadURL https://update.greasyfork.org/scripts/530187/%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8.user.js
 // @updateURL https://update.greasyfork.org/scripts/530187/%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8.meta.js
-// @icon         https://github.com/zxc88645/TdccAuto/blob/main/img/TdccAuto_icon.png
+
 // @homepage     https://github.com/zxc88645/TdccAuto
 // ==/UserScript==
 
