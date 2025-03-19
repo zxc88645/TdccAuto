@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         電子投票自動投票
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/zxc88645/TdccAuto
 // @version      1.4
 // @description  自動電子投票並保存結果成 PDF
 // @author       Owen
@@ -12,8 +12,8 @@
 // @require      https://code.jquery.com/jquery-3.6.0.min.js
 // @license      MIT
 // @homepage     https://github.com/zxc88645/TdccAuto
-// @downloadURL https://update.greasyfork.org/scripts/530187/%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8.user.js
-// @updateURL https://update.greasyfork.org/scripts/530187/%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8.meta.js
+// @downloadURL  https://update.greasyfork.org/scripts/530187/%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8.user.js
+// @updateURL    https://update.greasyfork.org/scripts/530187/%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8.meta.js
 // ==/UserScript==
 
 /* global html2pdf */

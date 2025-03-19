@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         自動下單零股
-// @namespace    http://tampermonkey.net/
-// @version      2025-03-19
+// @namespace    https://github.com/zxc88645/TdccAuto
+// @version      1.0
 // @description  自動輸入數字並提交訂單
 // @author       Owen
 // @match        https://www.sinotrade.com.tw/inside/Batch_Order
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=sinotrade.com.tw
+// @icon         https://raw.githubusercontent.com/zxc88645/TdccAuto/refs/heads/main/img/TdccAuto_icon.png
 // @grant        none
+// @homepage     https://github.com/zxc88645/TdccAuto
 // @license MIT
 // ==/UserScript==
  
