@@ -89,6 +89,39 @@
             .save();
     }
 
+
+    /**
+     * 下載 JPG
+     */
+    function saveAsJPG() {
+        const element = document.querySelector("body > div.c-main > form");
+        if (!element) return;
+
+        const children = Array.from(element.children).slice(0, 4);
+        const tempDiv = document.createElement("div");
+        tempDiv.style.background = "white"; // 確保背景是白的
+        children.forEach(el => tempDiv.appendChild(el.cloneNode(true)));
+
+        // 把 tempDiv 暫時加到 body 中，讓 html2canvas 能正確渲染
+        document.body.appendChild(tempDiv);
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+
+        // 提取股票代號
+        const text = document.querySelector("body > div.c-main > form > div.c-votelist_title > h2")?.innerText.trim();
+        const match = text?.match(/貴股東對(\d+)\s/);
+        const stockNumber = match ? match[1] : "投票結果";
+
+        html2canvas(tempDiv, { scale: 2, useCORS: true }).then(canvas => {
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/jpeg", 1.0);
+            link.download = `${stockNumber}.jpg`;
+            link.click();
+            document.body.removeChild(tempDiv); // 清除暫時元素
+        });
+    }
+
+
     /**
      * 主程式
      */
@@ -119,7 +152,7 @@
         } else if (currentPath === '/evote/shareholder/002/01.html') {
             console.log('準備列印投票結果');
             if (document.querySelector("#printPage")?.innerText.trim() === '列印') {
-                savePDF();
+                saveAsJPG();
             }
 
         } else {
