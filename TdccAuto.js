@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         電子投票自動投票
 // @namespace    https://github.com/zxc88645/TdccAuto
-// @version      1.4
+// @version      1.5
 // @description  自動電子投票並保存結果成 PDF
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
