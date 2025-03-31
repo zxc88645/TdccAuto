@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         電子投票自動投票
 // @namespace    https://github.com/zxc88645/TdccAuto
-// @version      1.5.1
-// @description  自動電子投票並保存結果成 PDF
+// @version      1.5.2
+// @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
 // @icon         https://raw.githubusercontent.com/zxc88645/TdccAuto/refs/heads/main/img/TdccAuto_icon.png
@@ -11,8 +11,6 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js
 // @license      MIT
 // @homepage     https://github.com/zxc88645/TdccAuto
-// @downloadURL  https://update.greasyfork.org/scripts/530187/%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8.user.js
-// @updateURL    https://update.greasyfork.org/scripts/530187/%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8.meta.js
 // ==/UserScript==
 
 /* global html2pdf */
@@ -31,7 +29,7 @@
      */
     function querySelector(selector, context = document) {
         return selector.startsWith('/') || selector.startsWith('(') ? document.evaluate(selector, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
-        : context.querySelector(selector);
+            : context.querySelector(selector);
     }
 
     /**
@@ -79,12 +77,12 @@
 
         html2pdf()
             .set({
-            margin: 1,
-            filename: `${stockNumber}.pdf`,
-            image: { type: 'jpeg', quality: 1 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
+                margin: 1,
+                filename: `${stockNumber}.pdf`,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            })
             .from(tempDiv)
             .save();
     }
@@ -129,8 +127,12 @@
         const currentPath = window.location.pathname;
         console.log(`[當前網址] ${currentPath}`);
 
-        if (currentPath.includes('/evote/shareholder/001/')) {
-            console.log('進行電子投票');
+        if (currentPath.includes('/evote/shareholder/001/6_01.html')) {
+            console.log('進行電子投票 - 最後的確認');
+
+            await clickAndWait('#go', '確認', '確認');
+        } else if (currentPath.includes('/evote/shareholder/001/')) {
+            console.log('進行電子投票 - 投票中');
 
             // 全部棄權
             await clickAndWait('body > div.c-main > form > table:nth-child(3) > tbody > tr.u-t_align--right > td:nth-child(2) > a:nth-child(3)', '全部棄權', '勾選全部棄權(1)');
@@ -143,6 +145,8 @@
 
             // 確認投票結果
             await clickAndWait('body > div.c-main > form > div.c-votelist_actions > button:nth-child(1)', '確認投票結果', '確認投票結果');
+
+            // 最後的確認
 
 
         } else if (currentPath === '/evote/shareholder/000/tc_estock_welshas.html') {
