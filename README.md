@@ -32,7 +32,7 @@
 #### ✅ 永豐金自動下單零股
 
 - [📥 點此安裝](https://greasyfork.org/zh-TW/scripts/530246-%E8%87%AA%E5%8B%95%E4%B8%8B%E5%96%AE%E9%9B%B6%E8%82%A1)
-- 讓您在永豐金證券網站快速批次輸入零股訂單，提高交易效率。
+- 讓您在永豐金證券網站自動批次輸入零股訂單，解放雙手。
 - 適用網站：[永豐金批次下單](https://www.sinotrade.com.tw/newweb/Batch_Order/)
 
 ---
