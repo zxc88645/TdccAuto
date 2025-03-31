@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         電子投票自動投票
+// @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto
 // @version      1.6.1
 // @description  自動電子投票，並且快速將結果保存成 JPG
@@ -148,6 +148,74 @@
         });
     }
 
+    /**
+     * 創建懸浮窗口
+     */
+    function createFloatingPanel() {
+        const panel = document.createElement('div');
+        panel.id = 'tdcc-float-panel';
+        panel.style.position = 'fixed';
+        panel.style.bottom = '20px';
+        panel.style.right = '20px';
+        panel.style.zIndex = '9999';
+        panel.style.backgroundColor = '#ffffff';
+        panel.style.border = '1px solid #ccc';
+        panel.style.borderRadius = '5px';
+        panel.style.padding = '10px';
+        panel.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+        panel.style.fontFamily = 'Arial, sans-serif';
+        panel.style.fontSize = '14px';
+
+        const title = document.createElement('div');
+        title.textContent = '自動電子投票助手';
+        title.style.fontWeight = 'bold';
+        title.style.marginBottom = '10px';
+        panel.appendChild(title);
+
+        const clearBtn = document.createElement('button');
+        clearBtn.textContent = '清除 \'已保存\' 標記';
+        clearBtn.style.padding = '5px 10px';
+        clearBtn.style.backgroundColor = '#ff6b6b';
+        clearBtn.style.color = 'white';
+        clearBtn.style.border = 'none';
+        clearBtn.style.borderRadius = '3px';
+        clearBtn.style.cursor = 'pointer';
+        clearBtn.onclick = () => {
+            if (confirm('確定要清除所有已保存的股票記錄嗎？')) {
+                GM_setValue(savedKey, []);
+                window.location.reload();
+            }
+        };
+        panel.appendChild(clearBtn);
+
+        // 拖曳功能
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        title.style.cursor = 'move';
+        title.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - panel.getBoundingClientRect().left;
+            offsetY = e.clientY - panel.getBoundingClientRect().top;
+            panel.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            panel.style.left = `${e.clientX - offsetX}px`;
+            panel.style.top = `${e.clientY - offsetY}px`;
+            panel.style.right = 'auto';
+            panel.style.bottom = 'auto';
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            panel.style.cursor = 'default';
+        });
+
+        document.body.appendChild(panel);
+    }
+
 
     /**
      * 主程式
@@ -178,10 +246,15 @@
 
         } else if (currentPath === '/evote/shareholder/000/tc_estock_welshas.html') {
             console.log('位於投票列表首頁');
-            await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
 
             // 標註已儲存的股票
             markSavedStockRows(savedStocks);
+            // 創建漂浮面板
+            createFloatingPanel();
+
+            await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
+
+
         } else if (currentPath === '/evote/shareholder/002/01.html') {
             console.log('準備列印投票結果');
             if (document.querySelector("#printPage")?.innerText.trim() === '列印') {
