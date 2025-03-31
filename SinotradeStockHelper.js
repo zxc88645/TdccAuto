@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動下單零股
-// @namespace    https://github.com/zxc88645/TdccAuto
-// @version      1.0.1
+// @namespace    https://github.com/zxc88645/TdccAuto/blob/main/SinotradeStockHelper.js
+// @version      1.0.2
 // @description  將需要購買的零股代號一次輸入到下方多行區塊後(建議整理好代號後一次貼上去)，將會自動為您下單到暫存。
 // @author       Owen
 // @match        https://www.sinotrade.com.tw/inside/Batch_Order
