@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         電子投票自動投票
 // @namespace    https://github.com/zxc88645/TdccAuto
-// @version      1.5.3
+// @version      1.6.0
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
 // @icon         https://raw.githubusercontent.com/zxc88645/TdccAuto/refs/heads/main/img/TdccAuto_icon.png
-// @grant        none
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @require      https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js
 // @license      MIT
@@ -17,6 +18,12 @@
 
 (function () {
     'use strict';
+
+    const savedKey = 'savedStocks';
+    const savedStocks = GM_getValue(savedKey, []);
+
+    // log 當前 savedStocks
+    console.log(`[已保存的股票] ${savedStocks.join(', ')}`);
 
     /** 延遲函式 */
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -60,35 +67,6 @@
     }
 
     /**
-     * 下載 PDF
-     */
-    function savePDF() {
-        const element = document.querySelector("body > div.c-main > form");
-        if (!element) return;
-
-        const children = Array.from(element.children).slice(0, 4);
-        const tempDiv = document.createElement("div");
-        children.forEach(el => tempDiv.appendChild(el.cloneNode(true)));
-
-        // 提取股票代號
-        const text = document.querySelector("body > div.c-main > form > div.c-votelist_title > h2")?.innerText.trim();
-        const match = text?.match(/貴股東對(\d+)\s/);
-        const stockNumber = match ? match[1] : "投票結果";
-
-        html2pdf()
-            .set({
-                margin: 1,
-                filename: `${stockNumber}.pdf`,
-                image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            })
-            .from(tempDiv)
-            .save();
-    }
-
-
-    /**
      * 下載 JPG
      */
     function saveAsJPG() {
@@ -106,9 +84,7 @@
         tempDiv.style.left = '-9999px';
 
         // 提取股票代號
-        const text = document.querySelector("body > div.c-main > form > div.c-votelist_title > h2")?.innerText.trim();
-        const match = text?.match(/貴股東對(\d+)\s/);
-        const stockNumber = match ? match[1] : "投票結果";
+        const stockNumber = getStockNumber() ?? "投票結果";
 
         html2canvas(tempDiv, { scale: 2, useCORS: true }).then(canvas => {
             const link = document.createElement("a");
@@ -117,8 +93,32 @@
             link.click();
             document.body.removeChild(tempDiv); // 清除暫時元素
         });
+
+        // 保存股票代號
+        saveStockNumber();
     }
 
+    /**
+     * 保存已下載截圖的代號
+     */
+    function saveStockNumber() {
+        const stockNumber = getStockNumber();
+        if (stockNumber) {
+            console.log(`[保存] ${stockNumber}`);
+            savedStocks.push(stockNumber);
+            GM_setValue(savedKey, savedStocks);
+        }
+    }
+
+
+    /**
+     * 取得股票代號
+     */
+    function getStockNumber() {
+        const text = document.querySelector("body > div.c-main > form > div.c-votelist_title > h2")?.innerText.trim();
+        const match = text?.match(/貴股東對(\d+)\s/);
+        return match ? match[1] : null;
+    }
 
     /**
      * 主程式
@@ -150,6 +150,28 @@
         } else if (currentPath === '/evote/shareholder/000/tc_estock_welshas.html') {
             console.log('位於投票列表首頁');
             await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
+
+            const rows = document.querySelectorAll('#stockInfo tbody tr');
+            rows.forEach(row => {
+                const codeDiv = row.querySelector('div.u-width--40');
+                if (!codeDiv) return;
+                const codeDiv2 = row.querySelector('a.c-actLink');
+
+                const code = codeDiv.textContent.trim();
+                if (savedStocks.includes(code)) {
+                    // 已存在，加註文字
+                    if (!codeDiv.innerHTML.includes('已保存')) {
+                        const tag = document.createElement('span');
+                        tag.textContent = '（已保存）';
+                        tag.className = 'savedTag';
+                        tag.style.color = 'green';
+                        tag.style.marginLeft = '5px';
+                        tag.style.fontSize = '7px';
+                        codeDiv2.appendChild(tag);
+                    }
+                }
+            });
+
 
         } else if (currentPath === '/evote/shareholder/002/01.html') {
             console.log('準備列印投票結果');
