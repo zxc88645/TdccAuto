@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         電子投票自動投票
 // @namespace    https://github.com/zxc88645/TdccAuto
-// @version      1.6.0
+// @version      1.6.1
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -121,6 +121,35 @@
     }
 
     /**
+     * 標註已儲存的股票代號
+     */
+    function markSavedStockRows(savedStockList = []) {
+        const stockRows = document.querySelectorAll('#stockInfo tbody tr');
+
+        stockRows.forEach(row => {
+            const stockCodeCell = row.querySelector('div.u-width--40');
+            const appendTargetCell = row.querySelector('td.u-width--20');
+            if (!stockCodeCell || !appendTargetCell) return;
+
+            const stockCode = stockCodeCell.textContent.trim();
+
+            if (savedStockList.includes(stockCode)) {
+                const alreadyTagged = stockCodeCell.innerHTML.includes('已保存');
+                if (!alreadyTagged) {
+                    const savedTag = document.createElement('span');
+                    savedTag.textContent = '（已保存）';
+                    savedTag.className = 'savedTag';
+                    savedTag.style.color = 'green';
+                    savedTag.style.marginLeft = '5px';
+                    savedTag.style.fontSize = '7px';
+                    appendTargetCell.appendChild(savedTag);
+                }
+            }
+        });
+    }
+
+
+    /**
      * 主程式
      */
     async function main() {
@@ -151,28 +180,8 @@
             console.log('位於投票列表首頁');
             await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
 
-            const rows = document.querySelectorAll('#stockInfo tbody tr');
-            rows.forEach(row => {
-                const codeDiv = row.querySelector('div.u-width--40');
-                if (!codeDiv) return;
-                const codeDiv2 = row.querySelector('a.c-actLink');
-
-                const code = codeDiv.textContent.trim();
-                if (savedStocks.includes(code)) {
-                    // 已存在，加註文字
-                    if (!codeDiv.innerHTML.includes('已保存')) {
-                        const tag = document.createElement('span');
-                        tag.textContent = '（已保存）';
-                        tag.className = 'savedTag';
-                        tag.style.color = 'green';
-                        tag.style.marginLeft = '5px';
-                        tag.style.fontSize = '7px';
-                        codeDiv2.appendChild(tag);
-                    }
-                }
-            });
-
-
+            // 標註已儲存的股票
+            markSavedStockRows(savedStocks);
         } else if (currentPath === '/evote/shareholder/002/01.html') {
             console.log('準備列印投票結果');
             if (document.querySelector("#printPage")?.innerText.trim() === '列印') {
