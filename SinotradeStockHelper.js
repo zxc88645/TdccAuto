@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動下單零股
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/SinotradeStockHelper.js
-// @version      1.0.2
+// @version      1.0.3
 // @description  將需要購買的零股代號一次輸入到下方多行區塊後(建議整理好代號後一次貼上去)，將會自動為您下單到暫存。
 // @author       Owen
 // @match        https://www.sinotrade.com.tw/inside/Batch_Order
@@ -62,9 +62,16 @@
         await simulateTyping(inputElement, value);
         await sleep(1000);
 
-        if (selectionMenu.childNodes.length > 0) {
+        if (selectionMenu.childNodes.length > 0 && (selectionMenu.childNodes[0].innerText).startsWith(value + ' ')) {
+            // 顯示該元素文字
+            console.log(`[選擇] ${selectionMenu.childNodes[0].innerText}`);
+
             selectionMenu.childNodes[0].click();
             await sleep(500);
+        } else {
+            console.warn("所查詢股票不存在或不正確，流程中斷");
+            isProcessing = false;
+            return;
         }
 
         if (!(await selectOptionByValue(selectElement, "C"))) {
