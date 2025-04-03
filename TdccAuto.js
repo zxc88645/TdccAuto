@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.6.3
+// @version      1.6.4
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -227,7 +227,7 @@
         if (currentPath.includes('/evote/shareholder/001/6_01.html')) {
             console.log('進行電子投票 - 最後的確認');
             await clickAndWait('#go', '確認', '確認');
-        } else if (currentPath.includes('/evote/shareholder/001/5_01.html')) {
+        } else if (currentPath.includes('/evote/shareholder/001/5_01.html') || currentPath.includes('/evote/shareholder/001/2_01.html')) {
             // 確認投票結果
             console.log('進行電子投票 - 投票確認');
             await sleep(500);
