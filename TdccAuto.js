@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.6.5
+// @version      1.7.0
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -19,11 +19,27 @@
 (function () {
     'use strict';
 
-    const savedKey = 'savedStocks';
-    const savedStocks = GM_getValue(savedKey, []);
+    const savedKey = 'savedStocks2';
+    let savedStocks = GM_getValue(savedKey, {});
+    let idNo = null;
+
+    fetchAndParseIdNO().then(_idNo => {
+        idNo = _idNo;
+    });
+
 
     // log 當前 savedStocks
-    console.log(`[已保存的股票] ${savedStocks.join(', ')}`);
+    console.log('[所有帳號的已保存股票]');
+    for (const [_idNo, stocks] of Object.entries(savedStocks)) {
+        debugger;
+        if (Array.isArray(stocks)) {
+            console.log(`戶號 ${_idNo}：${stocks.join(', ')}`);
+        } else {
+            delete savedStocks[_idNo]; // 移除舊資料格式
+            GM_setValue(savedKey, savedStocks); // 更新儲存的資料
+        }
+    }
+
 
     /** 延遲函式 */
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -94,12 +110,12 @@
         html2canvas(tempDiv, { scale: 2, useCORS: true }).then(canvas => {
             const link = document.createElement("a");
             link.href = canvas.toDataURL("image/jpeg", 1.0);
-            link.download = `${stockNumber}.jpg`;
+            link.download = `${idNo}_${stockNumber}.jpg`;
             link.click();
             document.body.removeChild(tempDiv); // 清除暫時元素
         });
 
-        // 保存股票代號
+        // 保存股票代號紀錄
         saveStockNumber();
     }
 
@@ -108,11 +124,89 @@
      */
     function saveStockNumber() {
         const stockNumber = getStockNumber();
-        if (stockNumber && !savedStocks.includes(stockNumber)) {
-            console.log(`[保存] ${stockNumber}`);
-            savedStocks.push(stockNumber);
-            GM_setValue(savedKey, savedStocks);
+
+        if (!idNo || !stockNumber) {
+            console.warn(`[saveStockNumber] 無法保存：idNo=${idNo}, stockNumber=${stockNumber}`);
+            return;
         }
+
+        // 若該帳號尚無記錄，初始化為空陣列
+        if (!savedStocks[idNo]) {
+            savedStocks[idNo] = [];
+        }
+
+        // 若尚未儲存此股票代號才加入
+        if (!savedStocks[idNo].includes(stockNumber)) {
+            savedStocks[idNo].push(stockNumber);
+            GM_setValue(savedKey, savedStocks);
+            console.log(`[saveStockNumber] 已儲存 ${stockNumber} 至帳號 ${idNo}`);
+        } else {
+            console.log(`[saveStockNumber] ${stockNumber} 已存在於帳號 ${idNo}`);
+        }
+    }
+
+
+    /**
+     * 從 /evote/shareholder/000/tc_estock_welshas.html 抓取 HTML 並解析 IdNO
+     */
+    async function fetchAndParseIdNO() {
+        try {
+            console.log('[fetchAndParseIdNO] 開始抓取 IdNO...');
+            const response = await fetch('/evote/shareholder/000/tc_estock_welshas.html', {
+                credentials: 'include' // 保留 cookie/session
+            });
+
+            if (!response.ok) {
+                console.warn(`[fetchAndParseIdNO] 請求失敗，HTTP ${response.status}`);
+                return null;
+            }
+
+            const html = await response.text();
+            return getIdNO(html);
+
+        } catch (error) {
+            console.error('[fetchAndParseIdNO] 發生錯誤：', error);
+            return null;
+        }
+    }
+
+    /**
+     * 取得 IdNO
+     * @param {string} html - 從頁面取得的 HTML 原始碼
+     * @returns {string|null}
+     */
+    function getIdNO(html) {
+        const regex = /idNo\s*:\s*'([A-Z]\d{9})'/i;
+        const match = html.match(regex);
+
+        if (match && match[1]) {
+            console.log(`[getIdNO] 從 HTML 解析 IdNO: ${match[1]}`);
+            return match[1];
+        } else {
+            console.log('[getIdNO] 無法解析 IdNO');
+            return null;
+        }
+    }
+
+    /**
+     * 等待直到全域變數 idNo 有值（非 null），最多嘗試 maxRetries 次
+     * @param {number} maxRetries 最大重試次數（預設 10）
+     * @param {number} delay 每次檢查間隔毫秒（預設 500ms）
+     * @returns {Promise<string|null>} 成功時回傳 idNo，失敗則回傳 null
+     */
+    async function waitUntilIdNOAvailable(maxRetries = 10, delay = 500) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            if (idNo) {
+                console.log(`[waitUntilIdNOAvailable] idNo 已取得：${idNo}（第 ${attempt} 次）`);
+                return idNo;
+            }
+
+            console.log(`[waitUntilIdNOAvailable] 第 ${attempt} 次等待 idNo...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        console.warn(`[waitUntilIdNOAvailable] 超過最大次數，idNo 仍為 null`);
+        return null;
     }
 
 
@@ -130,6 +224,8 @@
      */
     function markSavedStockRows(savedStockList = []) {
         try {
+            console.log(`[markSavedStockRows] 標記帳號 ${idNo} 的已保存股票：${savedStockList.join(', ')}`);
+
             const stockRows = document.querySelectorAll('#stockInfo tbody tr');
 
             stockRows.forEach(row => {
@@ -181,6 +277,12 @@
         title.style.marginBottom = '10px';
         panel.appendChild(title);
 
+        // 顯示idNo
+        const idNoDiv = document.createElement('div');
+        idNoDiv.textContent = 'idNo：' + idNo;
+        idNoDiv.style.marginBottom = '10px';
+        panel.appendChild(idNoDiv);
+
         const clearBtn = document.createElement('button');
         clearBtn.textContent = '清除 \'已保存\' 標記';
         clearBtn.style.padding = '5px 10px';
@@ -191,7 +293,7 @@
         clearBtn.style.cursor = 'pointer';
         clearBtn.onclick = () => {
             if (confirm('確定要清除所有已保存的股票記錄嗎？')) {
-                GM_setValue(savedKey, []);
+                GM_setValue(savedKey, {});
                 window.location.reload();
             }
         };
@@ -256,16 +358,21 @@
         } else if (currentPath === '/evote/shareholder/000/tc_estock_welshas.html') {
             console.log('位於投票列表首頁');
 
-            // 標註已儲存的股票
-            markSavedStockRows(savedStocks);
             // 創建漂浮面板
+            await waitUntilIdNOAvailable();
             createFloatingPanel();
+
+            // 標註已儲存的股票
+            markSavedStockRows(savedStocks[idNo] ?? []);
+
 
             await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
 
 
         } else if (currentPath === '/evote/shareholder/002/01.html') {
             console.log('準備列印投票結果');
+
+            await waitUntilIdNOAvailable();
             if (document.querySelector("#printPage")?.innerText.trim() === '列印') {
                 saveAsJPG();
             }
