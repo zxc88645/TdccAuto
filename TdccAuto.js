@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.6.4
+// @version      1.6.5
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -28,6 +28,10 @@
     /** 延遲函式 */
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+    function isXPath(selector) {
+        return selector.startsWith('/') || selector.startsWith('(');
+    }
+
     /**
      * 查詢 DOM 元素，支援 CSS 選擇器與 XPath
      * @param {string} selector - CSS 選擇器或 XPath
@@ -35,7 +39,8 @@
      * @returns {Element|null} - 匹配的 DOM 元素
      */
     function querySelector(selector, context = document) {
-        return selector.startsWith('/') || selector.startsWith('(') ? document.evaluate(selector, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+        return isXPath(selector)
+            ? document.evaluate(selector, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
             : context.querySelector(selector);
     }
 
@@ -103,7 +108,7 @@
      */
     function saveStockNumber() {
         const stockNumber = getStockNumber();
-        if (stockNumber) {
+        if (stockNumber && !savedStocks.includes(stockNumber)) {
             console.log(`[保存] ${stockNumber}`);
             savedStocks.push(stockNumber);
             GM_setValue(savedKey, savedStocks);
@@ -124,28 +129,32 @@
      * 標註已儲存的股票代號
      */
     function markSavedStockRows(savedStockList = []) {
-        const stockRows = document.querySelectorAll('#stockInfo tbody tr');
+        try {
+            const stockRows = document.querySelectorAll('#stockInfo tbody tr');
 
-        stockRows.forEach(row => {
-            const stockCodeCell = row.querySelector('div.u-width--40');
-            const appendTargetCell = row.querySelector('td.u-width--20');
-            if (!stockCodeCell || !appendTargetCell) return;
+            stockRows.forEach(row => {
+                const stockCodeCell = row.querySelector('div.u-width--40');
+                const appendTargetCell = row.querySelector('td.u-width--20');
+                if (!stockCodeCell || !appendTargetCell) return;
 
-            const stockCode = stockCodeCell.textContent.trim();
+                const stockCode = stockCodeCell.textContent.trim();
 
-            if (savedStockList.includes(stockCode)) {
-                const alreadyTagged = stockCodeCell.innerHTML.includes('已保存');
-                if (!alreadyTagged) {
-                    const savedTag = document.createElement('span');
-                    savedTag.textContent = '（已保存）';
-                    savedTag.className = 'savedTag';
-                    savedTag.style.color = 'green';
-                    savedTag.style.marginLeft = '5px';
-                    savedTag.style.fontSize = '7px';
-                    appendTargetCell.appendChild(savedTag);
+                if (savedStockList.includes(stockCode)) {
+                    const alreadyTagged = stockCodeCell.innerHTML.includes('已保存');
+                    if (!alreadyTagged) {
+                        const savedTag = document.createElement('span');
+                        savedTag.textContent = '（已保存）';
+                        savedTag.className = 'savedTag';
+                        savedTag.style.color = 'green';
+                        savedTag.style.marginLeft = '5px';
+                        savedTag.style.fontSize = '7px';
+                        appendTargetCell.appendChild(savedTag);
+                    }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('標記已保存股票時發生錯誤：', error);
+        }
     }
 
     /**
