@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.0
+// @version      1.7.1
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -31,7 +31,6 @@
     // log 當前 savedStocks
     console.log('[所有帳號的已保存股票]');
     for (const [_idNo, stocks] of Object.entries(savedStocks)) {
-        debugger;
         if (Array.isArray(stocks)) {
             console.log(`戶號 ${_idNo}：${stocks.join(', ')}`);
         } else {
