@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.1
+// @version      1.7.2
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -23,9 +23,12 @@
     let savedStocks = GM_getValue(savedKey, {});
     let idNo = null;
 
-    fetchAndParseIdNO().then(_idNo => {
-        idNo = _idNo;
-    });
+    // 投票業不要請求
+    if (!window.location.pathname.includes('/evote/shareholder/001/')) {
+        fetchAndParseIdNO().then(_idNo => {
+            idNo = _idNo;
+        });
+    }
 
 
     // log 當前 savedStocks
@@ -337,11 +340,6 @@
         if (currentPath.includes('/evote/shareholder/001/6_01.html')) {
             console.log('進行電子投票 - 最後的確認');
             await clickAndWait('#go', '確認', '確認');
-        } else if (currentPath.includes('/evote/shareholder/001/5_01.html') || currentPath.includes('/evote/shareholder/001/2_01.html')) {
-            // 確認投票結果
-            console.log('進行電子投票 - 投票確認');
-            await sleep(500);
-            await clickAndWait('body > div.c-main > form > div.c-votelist_actions > button:nth-child(1)', '確認投票結果', '確認投票結果');
         } else if (currentPath.includes('/evote/shareholder/001/')) {
             console.log('進行電子投票 - 投票中');
 
@@ -353,6 +351,11 @@
             await clickAndWait('#voteform > table:nth-child(5) > tbody > tr > td.u-t_align--right > a:nth-child(8)', '全部棄權', '勾選全部棄權(2)');
             await clickAndWait('#voteform > div.c-votelist_actions > button:nth-child(1)', '下一步', '按下 下一步(2)');
             await clickAndWait('body > div.jquery-modal.blocker.current > div > div:nth-child(2) > button:nth-child(1)', '下一步', '按下 下一步(2.2)');
+
+            // 確認投票結果
+            console.log('進行電子投票 - 投票確認');
+            await sleep(500);
+            await clickAndWait('body > div.c-main > form > div.c-votelist_actions > button:nth-child(1)', '確認投票結果', '確認投票結果');
 
         } else if (currentPath === '/evote/shareholder/000/tc_estock_welshas.html') {
             console.log('位於投票列表首頁');
