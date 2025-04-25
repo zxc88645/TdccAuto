@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.2
+// @version      1.7.3
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -64,15 +64,15 @@
 
     /**
      * 點擊指定元素並等待執行完成
-     * @param {string} selector - CSS 選擇器或 XPath
+     * @param {string|Element} target - CSS 選擇器或 XPath 或 DOM 元素
      * @param {string} [expectedText=null] - 預期的文字內容
      * @param {string} [logInfo=null] - 日誌輸出標籤
      */
-    async function clickAndWait(selector, expectedText = null, logInfo = null) {
+    async function clickAndWait(target, expectedText = null, logInfo = null) {
         try {
-            const element = querySelector(selector);
+            const element = typeof target === 'string' ? querySelector(target) : target;
             if (!element) {
-                console.warn(`[未找到] ${selector}`);
+                console.warn(`[未找到] ${target}`);
                 return;
             }
 
@@ -81,11 +81,11 @@
                 return;
             }
 
-            console.log(`[點擊] ${selector} ${logInfo ? `| ${logInfo}` : ''}`);
+            console.log(`[點擊] ${target} ${logInfo ? `| ${logInfo}` : ''}`);
             element.click();
             await sleep(100);
         } catch (error) {
-            console.error(`[錯誤] 點擊失敗: ${selector}`, error);
+            console.error(`[錯誤] 點擊失敗: ${target}`, error);
         }
     }
 
@@ -256,6 +256,38 @@
     }
 
     /**
+     * 進入第一個尚未保存結果的股票"查詢"
+     */
+    async function enterFirstUnmarkedStock() {
+        try {
+            const stockRows = document.querySelectorAll('#stockInfo tbody tr');
+
+            for (const row of stockRows) {
+                const stockCodeCell = row.querySelector('div.u-width--40');
+                const appendTargetCell = row.querySelector('td.u-width--20');
+                if (!stockCodeCell || !appendTargetCell) continue;
+                const stockCode = stockCodeCell.textContent.trim();
+                const savedTag = appendTargetCell.querySelector('.savedTag');
+                if (savedTag) {
+                    console.log(`[enterFirstUnmarkedStock] 股票 ${stockCode} 已保存，跳過`);
+                    continue;
+                }
+                const enterLink = row.querySelector('td.u-width--20 a:nth-child(2)');
+                if (enterLink) {
+                    console.log(`[enterFirstUnmarkedStock] 進入股票 ${stockCode}`);
+                    await clickAndWait(enterLink, '查詢', `查詢 ${stockCode} 的投票結果`);
+                    return;
+                }
+            }
+            console.warn('[enterFirstUnmarkedStock] 找不到尚未保存的股票');
+        } catch (error) {
+            console.error('[enterFirstUnmarkedStock] 發生錯誤：', error);
+        }
+    }
+
+
+
+    /**
      * 創建懸浮窗口
      */
     function createFloatingPanel() {
@@ -356,7 +388,6 @@
             console.log('進行電子投票 - 投票確認');
             await sleep(500);
             await clickAndWait('body > div.c-main > form > div.c-votelist_actions > button:nth-child(1)', '確認投票結果', '確認投票結果');
-
         } else if (currentPath === '/evote/shareholder/000/tc_estock_welshas.html') {
             console.log('位於投票列表首頁');
 
@@ -367,18 +398,22 @@
             // 標註已儲存的股票
             markSavedStockRows(savedStocks[idNo] ?? []);
 
-
+            // 自動進入尚未投票的股票
             await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
 
-
+            // 自動進入尚未保存結果的股票
+            await sleep(200);
+            await enterFirstUnmarkedStock();
         } else if (currentPath === '/evote/shareholder/002/01.html') {
             console.log('準備列印投票結果');
 
             await waitUntilIdNOAvailable();
             if (document.querySelector("#printPage")?.innerText.trim() === '列印') {
+                //保存並返回
                 saveAsJPG();
+                await sleep(200);
+                await clickAndWait('body > div.c-main > form > div.c-votelist_actions > button:nth-child(2)', '返回', '返回');
             }
-
         } else {
             console.warn('當前網址不在預期範圍內');
         }
