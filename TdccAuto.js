@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.3
+// @version      1.7.4
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -217,7 +217,7 @@
      */
     function getStockNumber() {
         const text = document.querySelector("body > div.c-main > form > div.c-votelist_title > h2")?.innerText.trim();
-        const match = text?.match(/貴股東對(\d+)\s/);
+        const match = text?.match(/貴股東對(\S+)/);
         return match ? match[1] : null;
     }
 
