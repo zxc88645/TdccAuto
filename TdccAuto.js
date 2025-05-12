@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.7
+// @version      1.7.8
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -411,7 +411,7 @@
 
             if (!enterLink) {
                 // 自動進入尚未保存結果的股票                
-                await clickAndWait('body > div.jquery-modal.blocker.current > div > div:nth-child(2) > button:nth-child(1)', '確認', '確認進入');
+                await enterFirstUnmarkedStock();
             }
 
         } else if (currentPath === '/evote/shareholder/002/01.html') {
