@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.4
+// @version      1.7.5
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -73,19 +73,21 @@
             const element = typeof target === 'string' ? querySelector(target) : target;
             if (!element) {
                 console.warn(`[未找到] ${target}`);
-                return;
+                return false;
             }
 
             if (expectedText && element.innerText.trim() !== expectedText) {
                 console.warn(`[文字不匹配] 預期: '${expectedText}'，但實際為: '${element.innerText.trim()}'`);
-                return;
+                return false;
             }
 
             console.log(`[點擊] ${target} ${logInfo ? `| ${logInfo}` : ''}`);
             element.click();
             await sleep(100);
+            return true;
         } catch (error) {
             console.error(`[錯誤] 點擊失敗: ${target}`, error);
+            return false;
         }
     }
 
@@ -399,11 +401,13 @@
             markSavedStockRows(savedStocks[idNo] ?? []);
 
             // 自動進入尚未投票的股票
-            await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
+            const enterLink = await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
 
-            // 自動進入尚未保存結果的股票
-            await sleep(200);
-            await enterFirstUnmarkedStock();
+            if (!enterLink) {
+                // 自動進入尚未保存結果的股票                
+                await clickAndWait('body > div.jquery-modal.blocker.current > div > div:nth-child(2) > button:nth-child(1)', '確認', '確認進入');
+            }
+
         } else if (currentPath === '/evote/shareholder/002/01.html') {
             console.log('準備列印投票結果');
 
