@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.8
+// @version      1.7.9
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -14,7 +14,7 @@
 // @homepage     https://github.com/zxc88645/TdccAuto
 // ==/UserScript==
 
-/* global html2pdf */
+/* global html2pdf html2canvas */
 
 (function () {
     'use strict';
@@ -363,6 +363,43 @@
         document.body.appendChild(panel);
     }
 
+    /**
+     * 等待 token 變數準備好
+     * @description 這個函式會檢查全域變數 voteObj 是否存在，並且有 getSignature 方法
+     * 如果存在，則會每 200 毫秒檢查一次 token 是否有值，直到超過指定的 timeout 時間。
+     * 如果 token 有值，則 resolve；如果超過 timeout 時間，則 reject。
+     * 
+     * @param {number} timeout - 等待的超時時間，預設為 5000 毫秒
+     * @returns {Promise<boolean>} - 如果 token 有值，則 resolve(true)，否則 reject。
+     * @throws {Error} - 如果超過 timeout 時間，則 reject(new Error('等待 token 超時'))。
+     */
+    function waitForTokenReady(timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            const hasGetSignature = voteObj?.hasOwnProperty('getSignature') && typeof voteObj.getSignature === 'function';
+
+            if (!hasGetSignature) {
+                // voteObj 沒有 getSignature，立即結束
+                return resolve(false);
+            }
+
+            const start = Date.now();
+
+            const timer = setInterval(() => {
+                // 每次都重新讀取 token（來自另一線程）
+                const token = document?.voteform?.token?.value;
+
+                if (token && token.trim().length > 0) {
+                    clearInterval(timer);
+                    resolve(true); // token 有值，完成
+                }
+
+                if (Date.now() - start > timeout) {
+                    clearInterval(timer);
+                    reject(new Error('等待 token 超時'));
+                }
+            }, 200); // 每 200ms 檢查一次
+        });
+    }
 
     /**
      * 主程式
@@ -378,7 +415,7 @@
             console.log('進行電子投票 - 投票中');
 
             // 避免機器人判定
-            await sleep(100);
+            await waitForTokenReady();
 
             // 全部棄權
             await clickAndWait('body > div.c-main > form > table:nth-child(3) > tbody > tr.u-t_align--right > td:nth-child(2) > a:nth-child(3)', '全部棄權', '勾選全部棄權(1)');
@@ -410,7 +447,7 @@
             const enterLink = await clickAndWait('//*[@id="stockInfo"]/tbody/tr[1]/td[4]/a[1]', '投票', '進入投票');
 
             if (!enterLink) {
-                // 自動進入尚未保存結果的股票                
+                // 自動進入尚未保存結果的股票
                 await enterFirstUnmarkedStock();
             }
 
