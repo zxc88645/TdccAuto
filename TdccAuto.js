@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tdcc 投票小幫手
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.12
+// @version      1.7.13
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
