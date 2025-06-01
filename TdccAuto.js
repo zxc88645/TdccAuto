@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         自動電子投票
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.10
+// @version      1.7.11
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -19,8 +19,8 @@
 (function () {
     'use strict';
 
-    const savedKey = 'savedStocks2';
-    let savedStocks = GM_getValue(savedKey, {});
+    const SAVED_KEY = 'savedStocks2';
+    let savedStocks = GM_getValue(SAVED_KEY, {});
     let idNo = null;
 
     // 投票業不要請求
@@ -38,7 +38,7 @@
             console.log(`戶號 ${_idNo}：${stocks.join(', ')}`);
         } else {
             delete savedStocks[_idNo]; // 移除舊資料格式
-            GM_setValue(savedKey, savedStocks); // 更新儲存的資料
+            GM_setValue(SAVED_KEY, savedStocks); // 更新儲存的資料
         }
     }
 
@@ -142,7 +142,7 @@
         // 若尚未儲存此股票代號才加入
         if (!savedStocks[idNo].includes(stockNumber)) {
             savedStocks[idNo].push(stockNumber);
-            GM_setValue(savedKey, savedStocks);
+            GM_setValue(SAVED_KEY, savedStocks);
             console.log(`[saveStockNumber] 已儲存 ${stockNumber} 至帳號 ${idNo}`);
         } else {
             console.log(`[saveStockNumber] ${stockNumber} 已存在於帳號 ${idNo}`);
@@ -329,7 +329,7 @@
         clearBtn.style.cursor = 'pointer';
         clearBtn.onclick = () => {
             if (confirm('確定要清除所有已保存的股票記錄嗎？')) {
-                GM_setValue(savedKey, {});
+                GM_setValue(SAVED_KEY, {});
                 window.location.reload();
             }
         };
