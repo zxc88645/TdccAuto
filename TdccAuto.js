@@ -14,7 +14,7 @@
 // @homepage     https://github.com/zxc88645/TdccAuto
 // ==/UserScript==
 
-/* global html2pdf html2canvas */
+/* global html2pdf html2canvas voteObj */
 
 (function () {
     'use strict';
