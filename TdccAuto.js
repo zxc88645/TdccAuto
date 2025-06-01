@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         自動電子投票
+// @name         Tdcc 投票小幫手
 // @namespace    https://github.com/zxc88645/TdccAuto/blob/main/TdccAuto.js
-// @version      1.7.11
+// @version      1.7.12
 // @description  自動電子投票，並且快速將結果保存成 JPG
 // @author       Owen
 // @match        https://stockservices.tdcc.com.tw/*
@@ -228,7 +228,7 @@
      */
     function markSavedStockRows(savedStockList = []) {
         try {
-            console.log(`[markSavedStockRows] 標記帳號 ${idNo} 的已保存股票：${savedStockList.join(', ')}`);
+            console.log(`[markSavedStockRows] 標記帳號 ${idNo} 的已保存股票：${savedStockList.join(', ')} ( 共 ${savedStockList.length} 個 )`);
 
             const stockRows = document.querySelectorAll('#stockInfo tbody tr');
 
@@ -296,37 +296,68 @@
         const panel = document.createElement('div');
         panel.id = 'tdcc-float-panel';
         panel.style.position = 'fixed';
-        panel.style.bottom = '20px';
-        panel.style.right = '20px';
+        panel.style.bottom = '24px';
+        panel.style.right = '24px';
         panel.style.zIndex = '9999';
-        panel.style.backgroundColor = '#ffffff';
-        panel.style.border = '1px solid #ccc';
-        panel.style.borderRadius = '5px';
-        panel.style.padding = '10px';
-        panel.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-        panel.style.fontFamily = 'Arial, sans-serif';
-        panel.style.fontSize = '14px';
+        panel.style.background = 'rgba(255,255,255,0.98)';
+        panel.style.border = 'none';
+        panel.style.borderRadius = '14px';
+        panel.style.padding = '10px 14px 8px 14px';
+        panel.style.boxShadow = '0 4px 24px 0 rgba(30, 136, 229, 0.13), 0 1.5px 6px 0 rgba(0,0,0,0.08)';
+        panel.style.fontFamily = 'Segoe UI, Arial, sans-serif';
+        panel.style.fontSize = '13px';
+        panel.style.minWidth = '140px';
+        panel.style.maxWidth = '180px';
+        panel.style.color = '#222';
+        panel.style.userSelect = 'none';
+        panel.style.transition = 'box-shadow 0.18s, background 0.18s';
+        panel.style.backdropFilter = 'blur(2px)';
+        panel.onmouseenter = () => panel.style.boxShadow = '0 8px 32px 0 rgba(30,136,229,0.18)';
+        panel.onmouseleave = () => panel.style.boxShadow = '0 4px 24px 0 rgba(30,136,229,0.13), 0 1.5px 6px 0 rgba(0,0,0,0.08)';
 
+        // 標題列
         const title = document.createElement('div');
-        title.textContent = '自動電子投票助手';
-        title.style.fontWeight = 'bold';
-        title.style.marginBottom = '10px';
+        title.textContent = 'Tdcc 投票小幫手';
+        title.style.fontWeight = '600';
+        title.style.fontSize = '14px';
+        title.style.letterSpacing = '0.5px';
+        title.style.marginBottom = '4px';
+        title.style.color = '#1976d2';
+        title.style.display = 'flex';
+        title.style.alignItems = 'center';
+        title.style.gap = '4px';
+        title.style.lineHeight = '1.2';
+        title.style.padding = '0 0 2px 0';
         panel.appendChild(title);
 
-        // 顯示idNo
+        // idNo 顯示
         const idNoDiv = document.createElement('div');
-        idNoDiv.textContent = 'idNo：' + idNo;
-        idNoDiv.style.marginBottom = '10px';
+        idNoDiv.textContent = (idNo ? 'idNo：' + idNo : 'idNo：-');
+        idNoDiv.style.marginBottom = '6px';
+        idNoDiv.style.fontSize = '11px';
+        idNoDiv.style.color = '#888';
+        idNoDiv.style.fontWeight = '400';
+        idNoDiv.style.letterSpacing = '0.2px';
+        idNoDiv.style.lineHeight = '1.2';
         panel.appendChild(idNoDiv);
 
+        // 清除按鈕
         const clearBtn = document.createElement('button');
-        clearBtn.textContent = '清除 \'已保存\' 標記';
-        clearBtn.style.padding = '5px 10px';
-        clearBtn.style.backgroundColor = '#ff6b6b';
+        clearBtn.textContent = '清除標記';
+        clearBtn.style.padding = '4px 10px';
+        clearBtn.style.background = 'linear-gradient(90deg,#1976d2 60%,#64b5f6 100%)';
         clearBtn.style.color = 'white';
         clearBtn.style.border = 'none';
-        clearBtn.style.borderRadius = '3px';
+        clearBtn.style.borderRadius = '6px';
         clearBtn.style.cursor = 'pointer';
+        clearBtn.style.fontWeight = '500';
+        clearBtn.style.fontSize = '12px';
+        clearBtn.style.boxShadow = '0 1px 4px 0 rgba(25,118,210,0.10)';
+        clearBtn.style.marginBottom = '2px';
+        clearBtn.style.marginTop = '2px';
+        clearBtn.style.transition = 'background 0.18s, filter 0.18s';
+        clearBtn.onmouseenter = () => clearBtn.style.filter = 'brightness(1.10)';
+        clearBtn.onmouseleave = () => clearBtn.style.filter = '';
         clearBtn.onclick = () => {
             if (confirm('確定要清除所有已保存的股票記錄嗎？')) {
                 GM_setValue(SAVED_KEY, {});
@@ -337,28 +368,55 @@
 
         // 拖曳功能
         let isDragging = false;
-        let offsetX, offsetY;
-
-        title.style.cursor = 'move';
+        let offsetX = 0, offsetY = 0;
+        title.style.cursor = 'grab';
+        function clampPanelPosition() {
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            const panelW = panel.offsetWidth;
+            const panelH = panel.offsetHeight;
+            let left = parseInt(panel.style.left, 10);
+            let top = parseInt(panel.style.top, 10);
+            if (isNaN(left)) left = winW - panelW - 24;
+            if (isNaN(top)) top = winH - panelH - 24;
+            left = Math.max(0, Math.min(left, winW - panelW));
+            top = Math.max(0, Math.min(top, winH - panelH));
+            panel.style.left = left + 'px';
+            panel.style.top = top + 'px';
+            panel.style.right = 'auto';
+            panel.style.bottom = 'auto';
+        }
+        function onMouseMove(e) {
+            if (!isDragging) return;
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            const panelW = panel.offsetWidth;
+            const panelH = panel.offsetHeight;
+            let newLeft = e.clientX - offsetX;
+            let newTop = e.clientY - offsetY;
+            newLeft = Math.max(0, Math.min(newLeft, winW - panelW));
+            newTop = Math.max(0, Math.min(newTop, winH - panelH));
+            panel.style.left = newLeft + 'px';
+            panel.style.top = newTop + 'px';
+            panel.style.right = 'auto';
+            panel.style.bottom = 'auto';
+        }
+        function onMouseUp() {
+            isDragging = false;
+            panel.style.cursor = 'default';
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
         title.addEventListener('mousedown', (e) => {
             isDragging = true;
             offsetX = e.clientX - panel.getBoundingClientRect().left;
             offsetY = e.clientY - panel.getBoundingClientRect().top;
             panel.style.cursor = 'grabbing';
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            panel.style.left = `${e.clientX - offsetX}px`;
-            panel.style.top = `${e.clientY - offsetY}px`;
-            panel.style.right = 'auto';
-            panel.style.bottom = 'auto';
-        });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-            panel.style.cursor = 'default';
-        });
+        window.addEventListener('resize', clampPanelPosition);
+        setTimeout(clampPanelPosition, 0);
 
         document.body.appendChild(panel);
     }
