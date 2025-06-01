@@ -19,33 +19,41 @@
 (function () {
     'use strict';
 
+    // 儲存股票代號的 key 與快取
     const SAVED_KEY = 'savedStocks2';
     let savedStocks = GM_getValue(SAVED_KEY, {});
     let idNo = null;
 
-    // 投票業不要請求
+    // 非投票頁面時，預先取得戶號
     if (!window.location.pathname.includes('/evote/shareholder/001/')) {
         fetchAndParseIdNO().then(_idNo => {
             idNo = _idNo;
         });
     }
 
-
-    // log 當前 savedStocks
+    // 輸出所有帳號的已保存股票
     console.log('[所有帳號的已保存股票]');
     for (const [_idNo, stocks] of Object.entries(savedStocks)) {
         if (Array.isArray(stocks)) {
             console.log(`戶號 ${_idNo}：${stocks.join(', ')}`);
         } else {
-            delete savedStocks[_idNo]; // 移除舊資料格式
-            GM_setValue(SAVED_KEY, savedStocks); // 更新儲存的資料
+            delete savedStocks[_idNo]; // 移除舊格式資料
+            GM_setValue(SAVED_KEY, savedStocks); // 更新儲存
         }
     }
 
-
-    /** 延遲函式 */
+    /**
+     * 延遲指定毫秒
+     * @param {number} ms - 毫秒
+     * @returns {Promise<void>}
+     */
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+    /**
+     * 判斷選擇器是否為 XPath
+     * @param {string} selector
+     * @returns {boolean}
+     */
     function isXPath(selector) {
         return selector.startsWith('/') || selector.startsWith('(');
     }
@@ -63,10 +71,11 @@
     }
 
     /**
-     * 點擊指定元素並等待執行完成
-     * @param {string|Element} target - CSS 選擇器或 XPath 或 DOM 元素
-     * @param {string} [expectedText=null] - 預期的文字內容
-     * @param {string} [logInfo=null] - 日誌輸出標籤
+     * 點擊指定元素並等待
+     * @param {string|Element} target - CSS 選擇器、XPath 或 DOM 元素
+     * @param {string} [expectedText=null] - 預期文字
+     * @param {string} [logInfo=null] - 日誌標籤
+     * @returns {Promise<boolean>}
      */
     async function clickAndWait(target, expectedText = null, logInfo = null) {
         try {
@@ -92,7 +101,7 @@
     }
 
     /**
-     * 下載 JPG
+     * 下載投票結果為 JPG
      */
     function saveAsJPG() {
         const element = document.querySelector("body > div.c-main > form");
@@ -100,15 +109,15 @@
 
         const children = Array.from(element.children).slice(0, 4);
         const tempDiv = document.createElement("div");
-        tempDiv.style.background = "white"; // 確保背景是白的
+        tempDiv.style.background = "white";
         children.forEach(el => tempDiv.appendChild(el.cloneNode(true)));
 
-        // 把 tempDiv 暫時加到 body 中，讓 html2canvas 能正確渲染
+        // 暫時加入 body 以利渲染
         document.body.appendChild(tempDiv);
         tempDiv.style.position = 'absolute';
         tempDiv.style.left = '-9999px';
 
-        // 提取股票代號
+        // 取得股票代號
         const stockNumber = getStockNumber() ?? "投票結果";
 
         html2canvas(tempDiv, { scale: 2, useCORS: true }).then(canvas => {
@@ -116,7 +125,7 @@
             link.href = canvas.toDataURL("image/jpeg", 1.0);
             link.download = `${idNo}_${stockNumber}.jpg`;
             link.click();
-            document.body.removeChild(tempDiv); // 清除暫時元素
+            document.body.removeChild(tempDiv);
         });
 
         // 保存股票代號紀錄
@@ -124,7 +133,7 @@
     }
 
     /**
-     * 保存已下載截圖的代號
+     * 保存已下載截圖的股票代號
      */
     function saveStockNumber() {
         const stockNumber = getStockNumber();
@@ -134,12 +143,12 @@
             return;
         }
 
-        // 若該帳號尚無記錄，初始化為空陣列
+        // 初始化帳號記錄
         if (!savedStocks[idNo]) {
             savedStocks[idNo] = [];
         }
 
-        // 若尚未儲存此股票代號才加入
+        // 未儲存才加入
         if (!savedStocks[idNo].includes(stockNumber)) {
             savedStocks[idNo].push(stockNumber);
             GM_setValue(SAVED_KEY, savedStocks);
@@ -149,15 +158,15 @@
         }
     }
 
-
     /**
-     * 從 /evote/shareholder/000/tc_estock_welshas.html 抓取 HTML 並解析 IdNO
+     * 從首頁 HTML 取得戶號
+     * @returns {Promise<string|null>}
      */
     async function fetchAndParseIdNO() {
         try {
             console.log('[fetchAndParseIdNO] 開始抓取 IdNO...');
             const response = await fetch('/evote/shareholder/000/tc_estock_welshas.html', {
-                credentials: 'include' // 保留 cookie/session
+                credentials: 'include'
             });
 
             if (!response.ok) {
@@ -175,8 +184,8 @@
     }
 
     /**
-     * 取得 IdNO
-     * @param {string} html - 從頁面取得的 HTML 原始碼
+     * 從 HTML 解析戶號
+     * @param {string} html
      * @returns {string|null}
      */
     function getIdNO(html) {
@@ -193,10 +202,10 @@
     }
 
     /**
-     * 等待直到全域變數 idNo 有值（非 null），最多嘗試 maxRetries 次
-     * @param {number} maxRetries 最大重試次數（預設 10）
-     * @param {number} delay 每次檢查間隔毫秒（預設 500ms）
-     * @returns {Promise<string|null>} 成功時回傳 idNo，失敗則回傳 null
+     * 等待 idNo 變數有值
+     * @param {number} maxRetries - 最大重試次數
+     * @param {number} delay - 每次間隔毫秒
+     * @returns {Promise<string|null>}
      */
     async function waitUntilIdNOAvailable(maxRetries = 10, delay = 500) {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -213,9 +222,9 @@
         return null;
     }
 
-
     /**
      * 取得股票代號
+     * @returns {string|null}
      */
     function getStockNumber() {
         const text = document.querySelector("body > div.c-main > form > div.c-votelist_title > h2")?.innerText.trim();
@@ -225,6 +234,7 @@
 
     /**
      * 標註已儲存的股票代號
+     * @param {string[]} savedStockList
      */
     function markSavedStockRows(savedStockList = []) {
         try {
@@ -258,7 +268,7 @@
     }
 
     /**
-     * 進入第一個尚未保存結果的股票"查詢"
+     * 自動進入第一個尚未保存的股票查詢
      */
     async function enterFirstUnmarkedStock() {
         try {
@@ -287,10 +297,8 @@
         }
     }
 
-
-
     /**
-     * 創建懸浮窗口
+     * 創建懸浮操作面板
      */
     function createFloatingPanel() {
         const panel = document.createElement('div');
@@ -423,44 +431,40 @@
 
     /**
      * 等待 token 變數準備好
-     * @description 這個函式會檢查全域變數 voteObj 是否存在，並且有 getSignature 方法
-     * 如果存在，則會每 200 毫秒檢查一次 token 是否有值，直到超過指定的 timeout 時間。
-     * 如果 token 有值，則 resolve；如果超過 timeout 時間，則 reject。
-     * 
-     * @param {number} timeout - 等待的超時時間，預設為 5000 毫秒
-     * @returns {Promise<boolean>} - 如果 token 有值，則 resolve(true)，否則 reject。
-     * @throws {Error} - 如果超過 timeout 時間，則 reject(new Error('等待 token 超時'))。
+     * 會檢查 voteObj 是否有 getSignature 方法，若有則輪詢 token 是否有值，直到超時
+     * @param {number} timeout - 超時毫秒數，預設 5000
+     * @returns {Promise<boolean>} - token 有值 resolve(true)，否則 reject
      */
     function waitForTokenReady(timeout = 5000) {
         return new Promise((resolve, reject) => {
             const hasGetSignature = voteObj?.hasOwnProperty('getSignature') && typeof voteObj.getSignature === 'function';
 
             if (!hasGetSignature) {
-                // voteObj 沒有 getSignature，立即結束
+                // 無 getSignature 直接結束
                 return resolve(false);
             }
 
             const start = Date.now();
 
             const timer = setInterval(() => {
-                // 每次都重新讀取 token（來自另一線程）
+                // 每次重新讀取 token
                 const token = document?.voteform?.token?.value;
 
                 if (token && token.trim().length > 0) {
                     clearInterval(timer);
-                    resolve(true); // token 有值，完成
+                    resolve(true);
                 }
 
                 if (Date.now() - start > timeout) {
                     clearInterval(timer);
                     reject(new Error('等待 token 超時'));
                 }
-            }, 100); // 每 X ms 檢查一次
+            }, 100);
         });
     }
 
     /**
-     * 主程式
+     * 主程式入口
      */
     async function main() {
         const currentPath = window.location.pathname;
@@ -472,7 +476,7 @@
         } else if (currentPath.includes('/evote/shareholder/001/')) {
             console.log('進行電子投票 - 投票中');
 
-            // 避免機器人判定
+            // 等待 token 準備好
             await waitForTokenReady();
 
             // 全部棄權
@@ -494,7 +498,7 @@
         } else if (currentPath === '/evote/shareholder/000/tc_estock_welshas.html') {
             console.log('位於投票列表首頁');
 
-            // 創建漂浮面板
+            // 創建懸浮面板
             await waitUntilIdNOAvailable();
             createFloatingPanel();
 
@@ -514,7 +518,7 @@
 
             await waitUntilIdNOAvailable();
             if (document.querySelector("#printPage")?.innerText.trim() === '列印') {
-                //保存並返回
+                // 保存並返回
                 saveAsJPG();
                 await sleep(200);
                 await clickAndWait('body > div.c-main > form > div.c-votelist_actions > button:nth-child(2)', '返回', '返回');
@@ -526,6 +530,6 @@
         console.log('✅ 完成');
     }
 
-    // 在網頁完全載入後執行 main 函式
+    // 頁面載入後執行主程式
     window.addEventListener("load", () => setTimeout(main, 500));
 })();
