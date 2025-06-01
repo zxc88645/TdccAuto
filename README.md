@@ -27,7 +27,7 @@
 
 - 透過此腳本，可以自動填寫並提交股東電子投票表單。
 - [📥 點此安裝](https://greasyfork.org/zh-TW/scripts/530187-%E9%9B%BB%E5%AD%90%E6%8A%95%E7%A5%A8%E8%87%AA%E5%8B%95%E6%8A%95%E7%A5%A8)
-- 適用網站：[TDCC 股東 e 服務](https://stockservices.tdcc.com.tw/evote/shareholder/000/tc_estock_welshas_tmp.html)
+- 適用網站：[TDCC 股東 e 服務](https://stockservices.tdcc.com.tw/evote/shareholder/000/tc_estock_welshas.html)
 
 #### ✅ 永豐金自動下單零股
 
